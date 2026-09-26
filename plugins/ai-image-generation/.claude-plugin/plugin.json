@@ -1,0 +1,9 @@
+{
+  "name": "ai-image-generation",
+  "version": "0.1.0",
+  "description": "Guidance and utilities for integrating AI image generation (OpenAI Images, Stability AI, Replicate) into applications",
+  "author": {
+    "name": "Anthropic",
+    "email": "support@anthropic.com"
+  }
+}
