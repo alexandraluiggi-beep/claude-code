@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Tri'Malin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout : une appli à onglets — recherche en héros, puis Explorer / Défi tri / Où ça va — avec une feuille modale pour le parcours « donner → réparer → trier ». */
+:root{
+  --bg:#E7F3F1;          /* eau calme */
+  --surface:#FFFFFF;
+  --surface-2:#F2F9F8;
+  --ink:#0F2F37;
+  --muted:#4C6970;
+  --line:#CFE3E0;
+  --accent:#0A7C76;      /* bleu-vert méditerranée */
+  --accent-ink:#FFFFFF;
+  --sun:#FFB627;         /* éco-points */
+  --good:#1E9E5A;
+  --bad:#D9483B;
+  --shadow:0 18px 40px -22px rgba(10,60,60,.45);
+  --font-display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1D22;--surface:#132C33;--surface-2:#183740;--ink:#E4F3F1;--muted:#9CBAC0;--line:#24474F;
+  --accent:#3CC8BC;--accent-ink:#06282A;--sun:#FFC24D;--good:#3DD27F;--bad:#FF7466;
+  --shadow:0 18px 40px -22px rgba(0,0,0,.8);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1D22;--surface:#132C33;--surface-2:#183740;--ink:#E4F3F1;--muted:#9CBAC0;--line:#24474F;
+  --accent:#3CC8BC;--accent-ink:#06282A;--sun:#FFC24D;--good:#3DD27F;--bad:#FF7466;
+  --shadow:0 18px 40px -22px rgba(0,0,0,.8);color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:12px}
+h1,h2,h3{font-family:var(--font-display);line-height:1.05;text-wrap:balance;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- barre du haut ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:blur(10px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:1.5rem;letter-spacing:-.01em}
+.brand .orb{--c:#3DBE6C;width:40px;height:40px;font-size:22px}
+.spacer{flex:1}
+.pts{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 4px;font-weight:700;font-variant-numeric:tabular-nums}
+.pts .coin{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:15px;
+  background:radial-gradient(circle at 35% 30%,#fff6 0 18%,transparent 40%),radial-gradient(circle,var(--sun) 55%,color-mix(in oklab,var(--sun),#000 30%));box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.pts small{color:var(--muted);font-weight:600;display:block;font-size:.72rem;line-height:1}
+.pts.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.15)}}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:18px}
+
+/* ---------- orbes 3D ---------- */
+.orb{--c:#9AD0C2;position:relative;display:grid;place-items:center;border-radius:50%;width:88px;height:88px;font-size:46px;flex:none;
+  background:
+   radial-gradient(circle at 30% 24%,rgba(255,255,255,.95) 0 5%,rgba(255,255,255,0) 20%),
+   radial-gradient(circle at 70% 85%,rgba(255,255,255,.35) 0 6%,rgba(255,255,255,0) 22%),
+   radial-gradient(circle at 45% 40%,color-mix(in oklab,var(--c),#fff 35%) 0,var(--c) 45%,color-mix(in oklab,var(--c),#000 38%) 100%);
+  box-shadow:inset -6px -10px 18px rgba(0,0,0,.16),inset 5px 6px 12px rgba(255,255,255,.45),0 16px 22px -12px color-mix(in oklab,var(--c),#000 55%);
+  transform-style:preserve-3d;transition:transform .25s ease}
+.orb>span{display:block;line-height:1;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25)) saturate(1.1);transform:translateZ(24px)}
+.orb.lg{width:132px;height:132px;font-size:70px}
+.orb.sm{width:56px;height:56px;font-size:30px}
+.tilt{perspective:500px}
+
+/* ---------- héros ---------- */
+.hero{position:relative;overflow:hidden;padding-block:28px 34px}
+.hero .wrap{position:relative;z-index:1;display:grid;gap:18px;justify-items:center;text-align:center}
+.eyebrow{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem;color:var(--accent)}
+.hero h1{font-size:clamp(2.2rem,6.4vw,4.2rem);font-weight:800;letter-spacing:-.02em;max-width:16ch}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p.lead{margin:0;color:var(--muted);max-width:52ch;font-size:1.06rem}
+.search{position:relative;width:min(620px,100%)}
+.search input{width:100%;font:inherit;font-size:1.12rem;padding:18px 20px 18px 56px;border-radius:22px;border:2px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search .glass{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:22px;pointer-events:none}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 8px);background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:6px;text-align:left;z-index:5;max-height:min(60vh,380px);overflow:auto}
+.suggest button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:8px 10px;border-radius:12px;text-align:left}
+.suggest button:hover,.suggest button.on{background:var(--surface-2)}
+.suggest .orb{width:40px;height:40px;font-size:21px}
+.suggest .s-name{font-weight:600}
+.suggest .s-dest{color:var(--muted);font-size:.85rem}
+.suggest .none{padding:12px;color:var(--muted)}
+.quick{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px 6px 8px;font-weight:600;font-size:.92rem;display:inline-flex;align-items:center;gap:6px;transition:transform .15s,background .15s}
+.chip:hover{transform:translateY(-2px)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.floaters{position:absolute;inset:0;pointer-events:none}
+.floaters .orb{position:absolute;opacity:.9;animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-16px) rotate(5deg)}}
+.paths{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:4px}
+.path{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.95rem;color:var(--muted)}
+.path b{color:var(--ink)}
+.path .orb{width:34px;height:34px;font-size:18px}
+.arrow{color:var(--muted);font-weight:800}
+
+/* ---------- onglets ---------- */
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);padding:5px;border-radius:999px;width:max-content;max-width:100%;margin:0 auto 22px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:9px 16px;border-radius:999px;font-weight:700;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+section.panel{padding-block:6px 48px}
+.panel-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.panel-head h2{font-size:clamp(1.6rem,4vw,2.3rem)}
+.panel-head p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+
+/* ---------- grille d'objets ---------- */
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:14px}
+.tile{position:relative;display:grid;justify-items:center;gap:10px;padding:18px 10px 14px;border-radius:22px;background:var(--surface);border:1px solid var(--line);text-align:center;transition:transform .2s,box-shadow .2s}
+.tile:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.tile:hover .orb{transform:rotate(-6deg) scale(1.06)}
+.tile .t-name{font-weight:700;line-height:1.2;font-size:.95rem}
+.tile .t-dest{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--d);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2);flex:none}
+.tile .seen{position:absolute;top:10px;right:10px;font-size:.75rem;color:var(--good);font-weight:800}
+
+/* ---------- poubelles SVG ---------- */
+.bin{width:100%;height:auto;overflow:visible;display:block}
+.bin .lid{transform-box:fill-box;transform-origin:0% 100%;transition:transform .35s cubic-bezier(.3,1.7,.5,1)}
+.open .bin .lid{transform:rotate(-38deg) translate(-2px,-8px)}
+
+/* ---------- guide « où ça va » ---------- */
+.dest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.dest{display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px}
+.dest h3{font-size:1.25rem}
+.dest .sub{color:var(--muted);font-size:.86rem;font-weight:600}
+.dest p{margin:8px 0 0;font-size:.93rem}
+.dest .visual{width:76px}
+.dest .visual .orb{width:72px;height:72px;font-size:38px}
+.dest:hover .bin .lid{transform:rotate(-30deg) translate(-2px,-6px)}
+
+/* ---------- feuille modale ---------- */
+.sheet{position:fixed;inset:0;z-index:50;display:grid;place-items:end center}
+.backdrop{position:absolute;inset:0;background:rgba(5,25,28,.55);animation:fade .25s}
+.card{position:relative;width:min(640px,100%);max-height:calc(100% - 24px);overflow:auto;background:var(--surface);border-radius:28px 28px 0 0;padding:24px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));animation:up .35s cubic-bezier(.2,1.2,.4,1)}
+@media (min-width:700px){.sheet{place-items:center}.card{border-radius:28px;max-height:calc(100% - 48px)}}
+@keyframes up{from{transform:translateY(60px);opacity:0}}
+@keyframes fade{from{opacity:0}}
+.close{position:absolute;top:14px;right:14px}
+.obj-head{display:flex;align-items:center;gap:16px;margin-bottom:6px;padding-right:44px}
+.obj-head h2{font-size:clamp(1.6rem,5vw,2.2rem)}
+.obj-head .cat{color:var(--muted);font-weight:600;font-size:.9rem}
+.q{font-family:var(--font-display);font-weight:700;font-size:1.3rem;margin:18px 0 10px}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:520px){.choices{grid-template-columns:1fr}}
+.choice{display:grid;justify-items:center;gap:8px;padding:16px 10px;border-radius:20px;border:2px solid var(--line);background:var(--surface-2);text-align:center;transition:transform .15s,border-color .15s}
+.choice:hover{transform:translateY(-3px);border-color:var(--accent)}
+.choice .orb{width:62px;height:62px;font-size:32px}
+.choice b{font-size:1.02rem}
+.choice small{color:var(--muted);font-size:.82rem;line-height:1.3}
+@media (max-width:520px){.choice{grid-template-columns:auto 1fr;justify-items:start;text-align:left;align-items:center}.choice .orb{grid-row:span 2}}
+.steps{display:flex;gap:6px;margin:14px 0 4px}
+.steps span{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.result{margin-top:14px;animation:up .4s cubic-bezier(.2,1.2,.4,1)}
+.verdict{font-family:var(--font-display);font-weight:800;font-size:clamp(1.5rem,5vw,2rem);line-height:1.1}
+.verdict small{display:block;font-family:var(--font-body);font-size:.85rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.scene{position:relative;height:230px;display:grid;place-items:end center;margin:6px 0 4px}
+.scene .target{width:150px}
+.scene .target .orb{width:150px;height:150px;font-size:76px;margin-bottom:10px}
+.scene .drop{position:absolute;left:50%;top:0;margin-left:-36px;width:72px;height:72px;font-size:38px}
+.scene.play .drop{animation:drop 1.1s .35s cubic-bezier(.5,0,.6,1) both}
+@keyframes drop{0%{transform:translateY(-10px) rotate(0) scale(1)}35%{transform:translateY(-34px) rotate(-20deg) scale(1.08)}100%{transform:translateY(118px) rotate(200deg) scale(.25);opacity:0}}
+.scene.landed .target{animation:squash .45s}
+@keyframes squash{30%{transform:scale(1.08,.92)}60%{transform:scale(.97,1.04)}}
+.flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--surface-2);border-radius:20px;padding:14px;margin:12px 0}
+.flow .orb{width:54px;height:54px;font-size:28px}
+.flow .arr{font-weight:800;color:var(--accent);animation:nudge 1.2s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateX(4px)}}
+.flow p{flex-basis:100%;margin:6px 0 0;text-align:center;font-size:.95rem}
+.box{border-radius:18px;padding:12px 14px;background:color-mix(in oklab,var(--sun) 18%,var(--surface));border:1px solid color-mix(in oklab,var(--sun) 45%,var(--line));font-size:.95rem;margin-top:10px}
+.box b{display:block;margin-bottom:2px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{border:0;border-radius:16px;padding:12px 18px;font-weight:700;background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .12s}
+.btn:active{transform:translateY(2px)}
+.btn.ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.earned{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:color-mix(in oklab,var(--sun),var(--ink) 35%);animation:up .5s .9s both}
+
+/* ---------- défi tri ---------- */
+.game{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:20px;position:relative;overflow:hidden}
+.g-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-weight:700}
+.g-top .bar{flex:1;min-width:120px;height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.g-top .bar i{display:block;height:100%;background:var(--accent);transition:width .4s}
+.g-stats{display:flex;gap:14px;font-variant-numeric:tabular-nums}
+.stage{display:grid;justify-items:center;gap:6px;padding:20px 0 10px;min-height:190px;text-align:center}
+.stage .item{touch-action:none;cursor:grab;width:120px;height:120px;font-size:64px;animation:bob 2.4s ease-in-out infinite}
+.stage .item.dragging{animation:none;cursor:grabbing;z-index:10;transition:none}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.stage .i-name{font-family:var(--font-display);font-weight:800;font-size:1.5rem}
+.stage .hint{color:var(--muted);font-size:.9rem}
+.bins{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media (max-width:640px){.bins{grid-template-columns:repeat(3,1fr)}}
+.gbin{border:2px solid transparent;background:var(--surface-2);border-radius:20px;padding:10px 6px 8px;display:grid;justify-items:center;gap:4px;font-weight:700;font-size:.8rem;line-height:1.15;text-align:center;transition:transform .15s,border-color .15s}
+.gbin .v{width:68px;height:78px;display:grid;place-items:end center}
+.gbin .v .orb{width:62px;height:62px;font-size:32px}
+.gbin:hover,.gbin.hover{transform:translateY(-4px);border-color:var(--accent)}
+.gbin.right{border-color:var(--good);background:color-mix(in oklab,var(--good) 16%,var(--surface))}
+.gbin.wrong{border-color:var(--bad);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.feedback{min-height:72px;margin:14px 0 4px;border-radius:18px;padding:12px 14px;font-size:.95rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.feedback.ok{background:color-mix(in oklab,var(--good) 15%,var(--surface));}
+.feedback.ko{background:color-mix(in oklab,var(--bad) 13%,var(--surface));}
+.feedback .msg{flex:1;min-width:200px}
+.feedback b{font-family:var(--font-display);font-size:1.15rem}
+.intro{display:grid;gap:14px;justify-items:center;text-align:center;padding:12px 0}
+.intro h3{font-size:1.8rem}
+.intro p{margin:0;color:var(--muted);max-width:50ch}
+.stars{font-size:2.6rem;letter-spacing:6px}
+.stars span{display:inline-block;animation:pop .5s both}
+.stars span:nth-child(2){animation-delay:.15s}.stars span:nth-child(3){animation-delay:.3s}
+@keyframes pop{from{transform:scale(0) rotate(-40deg)}70%{transform:scale(1.3)}}
+.ghost-drag{position:fixed;z-index:60;pointer-events:none;margin:0}
+
+/* ---------- confettis ---------- */
+.confetti{position:fixed;z-index:80;width:10px;height:14px;border-radius:3px;pointer-events:none;animation:conf 1s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes conf{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+
+.pts{white-space:nowrap}
+@media (max-width:480px){
+  .brand{font-size:1.2rem}.brand .orb{width:34px;height:34px;font-size:19px}
+  .tabs button{padding:8px 10px;font-size:.88rem}
+  .pts .unit{display:none}
+}
+footer{border-top:1px solid var(--line);padding-block:22px 34px;color:var(--muted);font-size:.88rem}
+footer a{color:var(--accent);font-weight:600}
+.level{font-size:.72rem}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><div class="orb"><span>♻️</span></div>Tri'Malin</div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="soundBtn" aria-label="Couper le son" title="Son">🔊</button>
+    <div class="pts" id="pts" aria-live="polite"><div class="coin">🌿</div><div><span id="ptsVal">0</span><span class="unit"> éco-points</span><small class="level" id="levelVal">Apprenti trieur</small></div></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="floaters" id="floaters" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow">Avant de jeter, on réfléchit</div>
+    <h1>Que faire de mon <em>objet</em> ?</h1>
+    <p class="lead">Tape le nom de ce que tu veux jeter. Tri'Malin te dit s'il peut être donné, réparé, ou dans quel bac il doit finir, et ce qu'il deviendra.</p>
+    <div class="search">
+      <span class="glass">🔎</span>
+      <input id="q" type="search" autocomplete="off" placeholder="Ex. pot de yaourt, vieux téléphone, canapé…" aria-label="Rechercher un objet" aria-controls="suggest" role="combobox" aria-expanded="false">
+      <div class="suggest" id="suggest" role="listbox" hidden></div>
+    </div>
+    <div class="quick" id="quick"></div>
+    <div class="paths" aria-label="Les trois réflexes">
+      <span class="path"><span class="orb" style="--c:#F7A1C4"><span>🎁</span></span><b>Donner</b></span><span class="arrow">›</span>
+      <span class="path"><span class="orb" style="--c:#A0D8EF"><span>🛠️</span></span><b>Réparer</b></span><span class="arrow">›</span>
+      <span class="path"><span class="orb" style="--c:#FFD23F"><span>♻️</span></span><b>Trier</b></span>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-explore" aria-selected="true" aria-controls="p-explore">🧭 Explorer</button>
+    <button role="tab" id="tab-game" aria-selected="false" aria-controls="p-game">🎯 Défi tri</button>
+    <button role="tab" id="tab-guide" aria-selected="false" aria-controls="p-guide">🗺️ Où ça va ?</button>
+  </div>
+
+  <section class="panel" id="p-explore" role="tabpanel" aria-labelledby="tab-explore">
+    <div class="panel-head">
+      <div><h2>Tous les objets</h2><p>Touche un objet pour découvrir son meilleur chemin. Chaque objet découvert rapporte des éco-points.</p></div>
+    </div>
+    <div class="cats" id="cats"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="panel" id="p-game" role="tabpanel" aria-labelledby="tab-game" hidden>
+    <div class="panel-head">
+      <div><h2>Défi tri</h2><p>10 objets, 6 destinations. Glisse l'objet dans la bonne poubelle, ou touche-la. Les séries de bonnes réponses rapportent des bonus.</p></div>
+    </div>
+    <div class="game" id="game"></div>
+  </section>
+
+  <section class="panel" id="p-guide" role="tabpanel" aria-labelledby="tab-guide" hidden>
+    <div class="panel-head">
+      <div><h2>Où ça va, et que devient-il ?</h2><p>Chaque filière transforme tes déchets en nouvelle matière. Voici ce qui se passe après le bac.</p></div>
+    </div>
+    <div class="dest-grid" id="destGrid"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Consignes générales inspirées des informations publiées par le Syvadec, syndicat de valorisation des déchets de Corse. Les règles peuvent varier d'une commune à l'autre : vérifie sur
+    <a href="https://www.syvadec.fr/je-trie-mes-dechets/que-deviennent-mes-dechets/que-deviennent-les-differents-dechets/" target="_blank" rel="noopener">syvadec.fr</a> ou auprès de ta mairie. Tri'Malin est une appli indépendante.
+  </div>
+</footer>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="objTitle" id="card"></div>
+</div>
+
+<script>
+(() => {
+/* ================= DONNÉES ================= */
+const DEST = {
+  jaune:{name:"Bac jaune",sub:"Emballages & papiers",kind:"bin",color:"#FFD23F",icon:"♻️",out:["📦","🚲","🧥"],
+    becomes:"Au centre de tri, chaque matière est séparée puis recyclée : les cartons redeviennent cartons, l'acier et l'alu deviennent pièces de vélo ou de voiture, les bouteilles plastique deviennent nouvelles bouteilles ou fibres polaires.",
+    tip:"Bien vidé, pas besoin de laver. En vrac, jamais dans un sac fermé, et sans imbriquer les emballages."},
+  verre:{name:"Colonne à verre",sub:"Bouteilles, pots, bocaux",kind:"bin",color:"#36B866",icon:"🍾",out:["🍾","🫙"],
+    becomes:"Broyé puis fondu à environ 1500 °C, le verre redevient bouteille ou bocal. Il se recycle à l'infini, sans perte de qualité.",
+    tip:"Sans bouchon ni couvercle : ils vont au bac jaune. Pas de vaisselle, de vitre ni de miroir."},
+  compost:{name:"Compost / biodéchets",sub:"Restes alimentaires",kind:"bin",color:"#9A6A3C",icon:"🍂",out:["🌱","🍅"],
+    becomes:"Les restes de cuisine se transforment en compost, un engrais naturel qui nourrit la terre du jardin ou des champs.",
+    tip:"Composteur individuel, composteur partagé ou bac biodéchets selon ta commune."},
+  gris:{name:"Ordures ménagères",sub:"Bac gris",kind:"bin",color:"#6D7A84",icon:"🗑️",out:["⛰️"],
+    becomes:"Ce qui ne se recycle pas part en centre de stockage, où il est enfoui. Aucune seconde vie : c'est le bac à alléger au maximum.",
+    tip:"En sac fermé. Si l'objet a une autre solution, choisis-la d'abord."},
+  recyclerie:{name:"Déchèterie",sub:"Encombrants, bois, métaux, gravats, végétaux",kind:"place",emoji:"🚛",color:"#7FB2E5",out:["🔩","🪵","🛣️"],
+    becomes:"Chaque matière a sa benne : le métal est refondu, le bois devient panneaux ou énergie, les gravats servent pour les routes, les végétaux deviennent compost.",
+    tip:"Trie ton chargement avant de partir, ça va plus vite sur place."},
+  deee:{name:"Appareils électriques",sub:"Déchèterie ou reprise en magasin",kind:"place",emoji:"🔌",color:"#9AD0C2",out:["🔩","🧲"],
+    becomes:"Dépollués puis démontés : les métaux, les plastiques et les métaux rares sont récupérés pour fabriquer de nouveaux produits.",
+    tip:"Le vendeur reprend gratuitement ton ancien appareil quand tu en achètes un neuf. Les grandes surfaces reprennent les petits appareils même sans achat."},
+  dangereux:{name:"Déchets dangereux",sub:"Déchèterie, zone dédiée",kind:"place",emoji:"☣️",color:"#FF9F6E",out:["🧪"],
+    becomes:"Traités dans des filières spécialisées pour ne pas polluer les sols ni l'eau. Certaines huiles sont même régénérées.",
+    tip:"Jamais dans l'évier ni dans le bac gris. Garde le produit dans son emballage d'origine."},
+  textile:{name:"Borne textile",sub:"Vêtements, linge, chaussures",kind:"place",emoji:"👕",color:"#F7A1C4",out:["👗","🧵","🏠"],
+    becomes:"Triés à la main : les pièces portables sont revendues ou données, les autres deviennent chiffons ou isolant pour les maisons.",
+    tip:"Même usés ou troués ! Propres, secs, dans un sac fermé. Chaussures attachées par paire."},
+  pharmacie:{name:"Pharmacie",sub:"Médicaments non utilisés",kind:"place",emoji:"💊",color:"#B9E0A5",out:["⚡"],
+    becomes:"Détruits en toute sécurité avec récupération d'énergie.",
+    tip:"Rapporte-les sans la boîte en carton ni la notice : ceux-là vont au bac jaune."},
+  collecte:{name:"Collecte en magasin",sub:"Piles, ampoules, cartouches",kind:"place",emoji:"🏪",color:"#C3B1E1",out:["🔩","🔋"],
+    becomes:"Les métaux (zinc, nickel, lithium…) et le verre sont récupérés pour refaire des produits.",
+    tip:"Des bacs de collecte t'attendent à l'entrée des supermarchés et magasins de bricolage."},
+  retour:{name:"Retour au vendeur",sub:"Garage, distributeur",kind:"place",emoji:"🔁",color:"#FFC97A",out:["🔁"],
+    becomes:"Le professionnel reprend l'objet et le confie à sa filière de recyclage ou de recharge.",
+    tip:"Reprise gratuite chez le distributeur ou le garagiste."}
+};
+const ACT = {
+  donner:{name:"Donner ou vendre",emoji:"🎁",color:"#F7A1C4",
+    text:"Ton objet peut servir à quelqu'un d'autre ! Ressourcerie, association, boîte à dons, vide-grenier ou petites annonces : il repart pour une seconde vie.",
+    tip:"Un objet donné, c'est un déchet évité et un objet neuf qu'on ne fabrique pas."},
+  reparer:{name:"Réparer",emoji:"🛠️",color:"#A0D8EF",
+    text:"Souvent, une petite pièce suffit. Essaie un Repair Café près de chez toi, un tuto en ligne, ou un réparateur.",
+    tip:"Le bonus réparation réduit la facture chez un réparateur labellisé QualiRépar, pour les appareils électriques, les vêtements et les chaussures."}
+};
+const CATS = {
+  cuisine:{name:"Cuisine",emoji:"🍽️",color:"#FFB4A2"},
+  sdb:{name:"Salle de bain",emoji:"🛁",color:"#A0D8EF"},
+  maison:{name:"Maison",emoji:"🏠",color:"#C3B1E1"},
+  electro:{name:"Électronique",emoji:"🔌",color:"#9AD0C2"},
+  textile:{name:"Textile",emoji:"🧶",color:"#F7A1C4"},
+  jardin:{name:"Jardin & bricolage",emoji:"🌳",color:"#B5E48C"}
+};
+// r : "donner" | "reparer" | "both" | "" ; t : astuce propre à l'objet
+const OBJ = [
+ ["Bouteille d'eau en plastique","🧴","cuisine","jaune","","Le bouchon peut rester vissé dessus.","eau soda bouteille plastique"],
+ ["Canette","🥤","cuisine","jaune","","L'aluminium se recycle à l'infini.","soda bière alu aluminium"],
+ ["Boîte de conserve","🥫","cuisine","jaune","","Bien vidée, inutile de la laver.","conserve acier métal"],
+ ["Brique de lait ou de jus","🧃","cuisine","jaune","","Les briques deviennent du papier toilette ou de l'essuie-tout.","tetra brick lait jus"],
+ ["Pot de yaourt","🥛","cuisine","jaune","","Tous les emballages vont désormais au bac jaune, même les pots et barquettes.","yaourt pot plastique dessert"],
+ ["Film et sachet plastique","🛍️","cuisine","jaune","","Sachets, films, sacs : bac jaune, en vrac.","film sac sachet emballage"],
+ ["Barquette alimentaire","🍱","cuisine","jaune","","Barquettes plastique ou alu : bac jaune, bien vidées.","barquette polystyrène traiteur"],
+ ["Boîte à pizza","🍕","cuisine","jaune","Retire les restes de nourriture avant, ils vont au compost.","carton pizza"],
+ ["Capsule de café en alu","☕","cuisine","jaune","","Les petits métaux vont au bac jaune.","capsule dosette café"],
+ ["Bouteille en verre","🍾","cuisine","verre","","Sans le bouchon, qui va au bac jaune.","vin bière bouteille verre"],
+ ["Pot de confiture","🫙","cuisine","verre","","Le couvercle métal va au bac jaune.","bocal pot verre confiture"],
+ ["Verre à boire cassé","🍷","cuisine","gris","Attention, ce n'est pas du verre d'emballage : il fond à une autre température et abîme le recyclage.","vaisselle verre cassé assiette"],
+ ["Vaisselle en bon état","🍽️","cuisine","gris","donner","Une ressourcerie la reprend avec plaisir.","assiette vaisselle tasse"],
+ ["Casserole","🥘","cuisine","recyclerie","donner","Le métal va dans la benne ferraille, pas au bac jaune.","poêle casserole métal"],
+ ["Épluchures","🥕","cuisine","compost","","Fruits et légumes, crus ou cuits.","épluchure légume fruit"],
+ ["Marc de café","🫘","cuisine","compost","","Le filtre papier aussi va au compost.","café marc filtre thé"],
+ ["Coquilles d'œufs","🥚","cuisine","compost","","Écrase-les pour qu'elles se décomposent plus vite.","oeuf coquille"],
+ ["Pain rassis","🥖","cuisine","compost","","Avant ça : pain perdu ou chapelure !","pain"],
+ ["Huile de friture","🍳","cuisine","dangereux","","Jamais dans l'évier : apporte-la en bouteille fermée à la déchèterie.","huile friture cuisson"],
+ ["Journal ou magazine","📰","maison","jaune","","Tous les papiers se recyclent.","papier journal magazine prospectus"],
+ ["Carton de livraison","📦","maison","jaune","Aplatis-le. S'il est très grand, apporte-le à la déchèterie.","carton colis livraison"],
+ ["Livre","📚","maison","jaune","donner","Donne-le à une boîte à livres ou une médiathèque.","livre roman bd"],
+ ["Canapé","🛋️","maison","recyclerie","both","","canapé sofa fauteuil meuble"],
+ ["Chaise","🪑","maison","recyclerie","both","Un pied qui bouge ? Un peu de colle à bois suffit souvent.","chaise meuble tabouret"],
+ ["Matelas","🛏️","maison","recyclerie","","Les mousses et ressorts sont séparés et recyclés.","matelas sommier lit"],
+ ["Jouet en plastique","🪀","maison","recyclerie","both","Les jouets ne sont pas des emballages : pas de bac jaune.","jouet jeu"],
+ ["Peluche","🧸","textile","textile","donner","","doudou peluche"],
+ ["Miroir","🪞","maison","recyclerie","donner","Pas dans la colonne à verre.","miroir vitre"],
+ ["Couche jetable","👶","maison","gris","","","couche bébé"],
+ ["Litière du chat","🐈","maison","gris","","","litière chat animal"],
+ ["Mégot","🚬","maison","gris","","Jamais par terre : un mégot pollue 500 litres d'eau.","mégot cigarette"],
+ ["Parapluie","☂️","maison","recyclerie","reparer","Cassé ? Il part à la ferraille.","parapluie"],
+ ["Lunettes","👓","maison","gris","donner","Beaucoup d'opticiens les collectent pour des associations.","lunettes"],
+ ["Médicaments","💊","sdb","pharmacie","","","médicament pilule cachet"],
+ ["Flacon de gel douche","🧴","sdb","jaune","","Les emballages de salle de bain vont aussi au bac jaune.","shampoing gel douche flacon"],
+ ["Bombe de déodorant vide","💨","sdb","jaune","","Seulement si elle est vide.","aérosol déodorant spray"],
+ ["Brosse à dents","🪥","sdb","gris","","","brosse dents"],
+ ["Éponge","🧽","sdb","gris","","","éponge"],
+ ["Masque et gants jetables","🧤","sdb","gris","","","masque gant"],
+ ["Sèche-cheveux","💇","sdb","deee","reparer","","sèche cheveux lisseur"],
+ ["Téléphone portable","📱","electro","deee","both","Efface tes données avant de le donner.","téléphone smartphone portable mobile"],
+ ["Ordinateur portable","💻","electro","deee","both","","ordinateur pc laptop"],
+ ["Télévision","📺","electro","deee","both","","télé tv écran"],
+ ["Grille-pain","🍞","electro","deee","reparer","","grille pain toaster"],
+ ["Machine à laver","🧺","electro","deee","reparer","Un joint ou une courroie se change facilement.","lave linge machine"],
+ ["Réfrigérateur","🧊","electro","deee","reparer","Il contient des gaz à capter : jamais sur le trottoir.","frigo réfrigérateur congélateur"],
+ ["Pile","🔋","electro","collecte","","","pile batterie accu"],
+ ["Ampoule","💡","electro","collecte","","Les ampoules à filament vont au bac gris.","ampoule led néon"],
+ ["Cartouche d'encre","🖨️","electro","collecte","","","cartouche encre imprimante toner"],
+ ["T-shirt","👕","textile","textile","donner","","tshirt t-shirt vêtement haut"],
+ ["Jean troué","👖","textile","textile","reparer","Une pièce thermocollante et c'est reparti.","jean pantalon"],
+ ["Chaussures","👟","textile","textile","both","Attache-les par paire.","chaussure basket"],
+ ["Sac à dos","🎒","textile","textile","both","","sac cartable"],
+ ["Vélo","🚲","jardin","recyclerie","both","Un atelier vélo participatif peut t'aider à le réparer.","vélo bicyclette"],
+ ["Tonte et branches","🌿","jardin","recyclerie","","Petites quantités : ton composteur. Sinon, déchèterie.","herbe tonte branche végétaux feuilles"],
+ ["Gravats","🧱","jardin","recyclerie","","","gravats brique ciment parpaing"],
+ ["Planche de bois","🪵","jardin","recyclerie","donner","","bois planche palette"],
+ ["Outils","🔨","jardin","recyclerie","both","","outil marteau perceuse"],
+ ["Pot de peinture","🎨","jardin","dangereux","","Même presque vide.","peinture vernis solvant"],
+ ["Huile de vidange","🛢️","jardin","dangereux","","","huile moteur vidange"],
+ ["Pneu","🛞","jardin","retour","","","pneu roue"],
+ ["Bouteille de gaz","🔥","jardin","retour","","Ne jamais la mettre dans une benne.","gaz butane propane"]
+].map((a,i)=>({id:i,n:a[0],e:a[1],c:a[2],d:a[3],r:a[4]||"",t:a[5]||"",k:a[6]||""}));
+// correction : pour la boîte à pizza, l'astuce est en 5e position
+OBJ.forEach(o=>{ if(!["","donner","reparer","both"].includes(o.r)){ o.k=o.t; o.t=o.r; o.r=""; } });
+
+/* ================= ÉTAT ================= */
+const KEY="trimalin-v1";
+let S={pts:0,seen:[],best:0,sound:true};
+try{ const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw)); }catch(e){}
+const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} };
+const LEVELS=[[0,"Apprenti trieur"],[50,"Trieur malin"],[150,"Pro du tri"],[300,"Héros du réemploi"],[600,"Légende du zéro déchet"]];
+const $=s=>document.querySelector(s);
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’']/g," ");
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderPts(){
+  $("#ptsVal").textContent=S.pts;
+  let lv=LEVELS[0][1]; LEVELS.forEach(([p,n])=>{ if(S.pts>=p) lv=n; });
+  $("#levelVal").textContent=lv;
+}
+function addPts(n){
+  S.pts+=n; save(); renderPts();
+  const p=$("#pts"); p.classList.remove("bump"); void p.offsetWidth; p.classList.add("bump");
+}
+
+/* ================= SON ================= */
+let ac=null;
+function tone(kind){
+  if(!S.sound) return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const notes=kind==="ok"?[660,880,1175]:kind==="ko"?[220,165]:[520];
+    notes.forEach((f,i)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type=kind==="ko"?"sawtooth":"triangle"; o.frequency.value=f;
+      const t=ac.currentTime+i*.09;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.12,t+.02); g.gain.exponentialRampToValueAtTime(.001,t+.22);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t+.25);
+    });
+  }catch(e){}
+}
+const sb=$("#soundBtn");
+const paintSound=()=>{ sb.textContent=S.sound?"🔊":"🔇"; sb.setAttribute("aria-label",S.sound?"Couper le son":"Activer le son"); };
+sb.addEventListener("click",()=>{ S.sound=!S.sound; save(); paintSound(); tone("tap"); });
+
+/* ================= VISUELS ================= */
+function shade(hex,p){
+  const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255;
+  const t=p<0?0:255, a=Math.abs(p)/100;
+  r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b);
+  return "#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+let uid=0;
+function binSVG(color,icon){
+  const g="b"+(uid++);
+  return `<svg class="bin" viewBox="0 0 120 150" aria-hidden="true">
+  <defs>
+    <linearGradient id="${g}a" x1="0" x2="1"><stop offset="0" stop-color="${shade(color,-38)}"/><stop offset=".3" stop-color="${shade(color,22)}"/><stop offset=".55" stop-color="${color}"/><stop offset="1" stop-color="${shade(color,-45)}"/></linearGradient>
+    <linearGradient id="${g}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(color,30)}"/><stop offset="1" stop-color="${shade(color,-28)}"/></linearGradient>
+    <radialGradient id="${g}s"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="60" cy="142" rx="50" ry="7" fill="url(#${g}s)"/>
+  <path d="M20 44 H100 L92 130 Q91 137 84 137 H36 Q29 137 28 130 Z" fill="url(#${g}a)"/>
+  <path d="M20 44 H100 L99.2 52 H20.8 Z" fill="${shade(color,-50)}" fill-opacity=".35"/>
+  <path d="M41 60 L43 124 M79 60 L77 124" stroke="${shade(color,-35)}" stroke-opacity=".4" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M31 56 L36 126" stroke="#fff" stroke-opacity=".38" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <circle cx="60" cy="90" r="17" fill="#fff" fill-opacity=".93"/>
+  <text x="60" y="97.5" text-anchor="middle" font-size="20">${icon}</text>
+  <circle cx="36" cy="138" r="6.5" fill="#262B30"/><circle cx="36" cy="138" r="2.5" fill="#8A949C"/>
+  <circle cx="84" cy="138" r="6.5" fill="#262B30"/><circle cx="84" cy="138" r="2.5" fill="#8A949C"/>
+  <g class="lid">
+    <rect x="11" y="29" width="98" height="17" rx="7" fill="url(#${g}l)"/>
+    <rect x="47" y="22" width="26" height="9" rx="4.5" fill="${shade(color,-32)}"/>
+    <rect x="16" y="31.5" width="88" height="3.5" rx="1.75" fill="#fff" fill-opacity=".45"/>
+  </g></svg>`;
+}
+const orb=(emoji,color,cls="")=>`<div class="orb ${cls}" style="--c:${color}"><span>${emoji}</span></div>`;
+function destVisual(key,cls=""){
+  const d=DEST[key];
+  return d.kind==="bin"?binSVG(d.color,d.icon):orb(d.emoji,d.color,cls);
+}
+// inclinaison 3D au survol
+function tiltify(root){
+  root.querySelectorAll(".orb").forEach(el=>{
+    if(el.dataset.t) return; el.dataset.t=1;
+    el.addEventListener("pointermove",e=>{
+      if(e.pointerType!=="mouse") return;
+      const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      el.style.transform=`perspective(400px) rotateY(${x*30}deg) rotateX(${-y*30}deg) scale(1.06)`;
+    });
+    el.addEventListener("pointerleave",()=>{ el.style.transform=""; });
+  });
+}
+function confetti(x,y,n=28){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cols=["#FFD23F","#36B866","#F7A1C4","#7FB2E5","#FF9F6E","#3CC8BC"];
+  for(let i=0;i<n;i++){
+    const c=document.createElement("i"); c.className="confetti";
+    const a=Math.random()*Math.PI*2,d=60+Math.random()*120;
+    c.style.cssText=`left:${x}px;top:${y}px;background:${cols[i%cols.length]};--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d+60}px;--r:${Math.random()*720-360}deg`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(),1100);
+  }
+}
+
+/* ================= HÉROS ================= */
+(function floaters(){
+  const box=$("#floaters");
+  const spots=[["🧃","#FFD23F",4,18,64],["🍾","#36B866",88,14,58],["🥕","#9A6A3C",9,66,52],["📱","#9AD0C2",84,62,60],["👕","#F7A1C4",94,40,44],["🪑","#7FB2E5",1,42,42]];
+  box.innerHTML=spots.map(([e,c,l,t,s],i)=>`<div class="orb" style="--c:${c};left:${l}%;top:${t}%;width:${s}px;height:${s}px;font-size:${s*.52}px;animation-delay:${-i*1.2}s;margin-left:-${s/2}px"><span>${e}</span></div>`).join("");
+  if(innerWidth<760) box.querySelectorAll(".orb").forEach((o,i)=>{ if(i>3) o.hidden=true; o.style.opacity=".45"; });
+})();
+const QUICK=["Pot de yaourt","Téléphone portable","Verre à boire cassé","Canapé","Pile","T-shirt"];
+$("#quick").innerHTML=QUICK.map(n=>{const o=OBJ.find(x=>x.n===n);return `<button class="chip" data-id="${o.id}"><span>${o.e}</span>${esc(o.n)}</button>`;}).join("");
+$("#quick").addEventListener("click",e=>{ const b=e.target.closest("[data-id]"); if(b) openObj(OBJ[b.dataset.id]); });
+
+// recherche
+const q=$("#q"),sug=$("#suggest");
+let hits=[],sel=0;
+function search(v){
+  const s=norm(v.trim()); if(!s) return [];
+  const words=s.split(/\s+/);
+  return OBJ.map(o=>{
+    const hay=norm(o.n+" "+o.k);
+    let sc=0; words.forEach(w=>{ if(hay.includes(w)) sc+= norm(o.n).startsWith(w)?3:norm(o.n).includes(w)?2:1; else sc-=5; });
+    return [sc,o];
+  }).filter(([sc])=>sc>0).sort((a,b)=>b[0]-a[0]).slice(0,7).map(x=>x[1]);
+}
+function drawSug(){
+  if(!q.value.trim()){ sug.hidden=true; q.setAttribute("aria-expanded","false"); return; }
+  sug.hidden=false; q.setAttribute("aria-expanded","true");
+  if(!hits.length){ sug.innerHTML=`<div class="none">Pas encore dans la liste. Dans le doute, regarde l'onglet « Où ça va ? » ou demande à ta déchèterie.</div>`; return; }
+  sug.innerHTML=hits.map((o,i)=>`<button role="option" data-id="${o.id}" class="${i===sel?"on":""}" aria-selected="${i===sel}">${orb(o.e,CATS[o.c].color)}<span><span class="s-name">${esc(o.n)}</span><br><span class="s-dest">${o.r?"Donner / réparer, sinon ":""}${DEST[o.d].name}</span></span></button>`).join("");
+}
+q.addEventListener("input",()=>{ hits=search(q.value); sel=0; drawSug(); });
+q.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"){ sel=Math.min(sel+1,hits.length-1); drawSug(); e.preventDefault(); }
+  else if(e.key==="ArrowUp"){ sel=Math.max(sel-1,0); drawSug(); e.preventDefault(); }
+  else if(e.key==="Enter" && hits[sel]){ openObj(hits[sel]); }
+  else if(e.key==="Escape"){ sug.hidden=true; }
+});
+sug.addEventListener("click",e=>{ const b=e.target.closest("[data-id]"); if(b) openObj(OBJ[b.dataset.id]); });
+document.addEventListener("click",e=>{ if(!e.target.closest(".search")) sug.hidden=true; });
+
+/* ================= EXPLORER ================= */
+let curCat="all";
+function renderCats(){
+  const all=[["all","Tout","✨"]].concat(Object.entries(CATS).map(([k,c])=>[k,c.name,c.emoji]));
+  $("#cats").innerHTML=all.map(([k,n,e])=>`<button class="chip" data-cat="${k}" aria-pressed="${k===curCat}"><span>${e}</span>${n}</button>`).join("");
+}
+function renderGrid(){
+  const list=OBJ.filter(o=>curCat==="all"||o.c===curCat);
+  $("#grid").innerHTML=list.map(o=>{
+    const d=DEST[o.d];
+    return `<button class="tile" data-id="${o.id}">${S.seen.includes(o.id)?'<span class="seen" aria-label="déjà découvert">✓</span>':""}
+      <div class="tilt">${orb(o.e,CATS[o.c].color)}</div>
+      <span class="t-name">${esc(o.n)}</span>
+      <span class="t-dest"><span class="dot" style="--d:${d.color}"></span>${o.r?(o.r==="reparer"?"Réparer":"Donner")+" · ":""}${d.name}</span></button>`;
+  }).join("");
+  tiltify($("#grid"));
+}
+$("#cats").addEventListener("click",e=>{ const b=e.target.closest("[data-cat]"); if(!b) return; curCat=b.dataset.cat; renderCats(); renderGrid(); });
+$("#grid").addEventListener("click",e=>{ const b=e.target.closest("[data-id]"); if(b) openObj(OBJ[b.dataset.id]); });
+
+/* ================= FEUILLE OBJET ================= */
+const sheet=$("#sheet"),card=$("#card");
+let lastFocus=null;
+function openObj(o){
+  sug.hidden=true; lastFocus=document.activeElement; tone("tap");
+  card.innerHTML=`<button class="iconbtn close" id="closeBtn" aria-label="Fermer">✕</button>
+   <div class="obj-head">${orb(o.e,CATS[o.c].color,"lg")}<div><div class="cat">${CATS[o.c].emoji} ${CATS[o.c].name}</div><h2 id="objTitle">${esc(o.n)}</h2></div></div>
+   <div id="flow"></div>`;
+  sheet.hidden=false; document.body.style.overflow="hidden";
+  $("#closeBtn").addEventListener("click",closeSheet);
+  if(o.r) askState(o); else showSort(o,false);
+  tiltify(card);
+  setTimeout(()=>$("#closeBtn").focus(),50);
+}
+function closeSheet(){ sheet.hidden=true; document.body.style.overflow=""; renderGrid(); if(lastFocus) lastFocus.focus(); }
+$("#backdrop").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !sheet.hidden) closeSheet(); });
+
+function steps(n){ return `<div class="steps" aria-hidden="true">${[1,2,3].map(i=>`<span class="${i<=n?"on":""}"></span>`).join("")}</div>`; }
+function askState(o){
+  const canGive=o.r==="donner"||o.r==="both", canFix=o.r==="reparer"||o.r==="both";
+  $("#flow").innerHTML=`${steps(1)}<div class="q">Dans quel état est-il ?</div>
+   <div class="choices">
+     <button class="choice" data-m="${canGive?"donner":"reparer"}">${orb("🎁","#F7A1C4")}<b>Il marche encore</b><small>Propre, complet, utilisable</small></button>
+     <button class="choice" data-m="${canFix?"reparer":"donner"}">${orb("🛠️","#A0D8EF")}<b>Il est abîmé</b><small>Une panne, un trou, une pièce cassée</small></button>
+     <button class="choice" data-m="trier">${orb("♻️","#FFD23F")}<b>Il est fichu</b><small>Plus rien à en tirer</small></button>
+   </div>`;
+  tiltify($("#flow"));
+  $("#flow").querySelectorAll(".choice").forEach(b=>b.addEventListener("click",()=>{
+    tone("tap"); b.dataset.m==="trier"?showSort(o,true):showAct(o,b.dataset.m);
+  }));
+}
+function showAct(o,m){
+  const a=ACT[m];
+  $("#flow").innerHTML=`${steps(2)}<div class="result">
+    <div class="verdict"><small>Le meilleur chemin</small>${a.emoji} ${a.name}</div>
+    <div class="flow">${orb(o.e,CATS[o.c].color)}<span class="arr">➜</span>${orb(a.emoji,a.color)}<span class="arr">➜</span>${orb(m==="donner"?"😊":"✨","#B5E48C")}
+      <p>${a.text}</p></div>
+    ${o.t?`<div class="box"><b>💡 Astuce</b>${esc(o.t)}</div>`:""}
+    <div class="box"><b>🌍 Le savais-tu ?</b>${a.tip}</div>
+    ${award(o,8)}
+    <div class="actions"><button class="btn" id="toSort">Et s'il est vraiment fichu ?</button><button class="btn ghost" id="back">← Changer de réponse</button></div>
+  </div>`;
+  tiltify($("#flow"));
+  $("#toSort").addEventListener("click",()=>showSort(o,true));
+  $("#back").addEventListener("click",()=>askState(o));
+  burstFrom(".verdict");
+}
+function showSort(o,fromAsk){
+  const d=DEST[o.d];
+  $("#flow").innerHTML=`${o.r?steps(3):""}<div class="result">
+    <div class="verdict"><small>Direction</small>${d.kind==="bin"?d.icon:d.emoji} ${d.name}</div>
+    <div style="color:var(--muted);font-weight:600">${d.sub}</div>
+    <div class="scene" id="scene"><div class="target">${destVisual(o.d)}</div>${orb(o.e,CATS[o.c].color,"drop")}</div>
+    <div class="flow"><span style="font-weight:800">Ce qu'il devient</span><span class="arr">➜</span>${d.out.map(x=>orb(x,"#B5E48C","sm")).join("")}<p>${d.becomes}</p></div>
+    ${o.t?`<div class="box"><b>💡 Astuce</b>${esc(o.t)}</div>`:""}
+    <div class="box"><b>✅ Le bon geste</b>${d.tip}</div>
+    ${award(o,5)}
+    <div class="actions">${fromAsk?'<button class="btn ghost" id="back">← Changer de réponse</button>':""}<button class="btn" id="next">Un autre objet</button></div>
+  </div>`;
+  const sc=$("#scene");
+  requestAnimationFrame(()=>{
+    sc.classList.add("open","play");
+    setTimeout(()=>{ sc.classList.remove("open"); sc.classList.add("landed"); tone("ok"); const r=sc.getBoundingClientRect(); confetti(r.left+r.width/2,r.top+r.height*.55); },1450);
+  });
+  if(fromAsk) $("#back").addEventListener("click",()=>askState(o));
+  $("#next").addEventListener("click",()=>{ closeSheet(); q.value=""; q.focus(); });
+}
+function award(o,n){
+  if(S.seen.includes(o.id)) return "";
+  S.seen.push(o.id); addPts(n);
+  return `<div class="earned">🌿 +${n} éco-points, nouvel objet découvert !</div>`;
+}
+function burstFrom(sel){ const el=card.querySelector(sel); if(!el) return; tone("ok"); const r=el.getBoundingClientRect(); confetti(r.left+60,r.top+20,18); }
+
+/* ================= GUIDE ================= */
+$("#destGrid").innerHTML=Object.entries(DEST).map(([k,d])=>`<article class="dest"><div class="visual">${destVisual(k)}</div>
+  <div><h3>${d.name}</h3><div class="sub">${d.sub}</div><p>${d.becomes}</p></div></article>`).join("")
+  + Object.values(ACT).map(a=>`<article class="dest"><div class="visual">${orb(a.emoji,a.color)}</div><div><h3>${a.name}</h3><div class="sub">Avant de jeter</div><p>${a.text}</p></div></article>`).join("");
+tiltify($("#destGrid"));
+
+/* ================= DÉFI TRI ================= */
+const GB=["jaune","verre","compost","gris","recyclerie","textile"];
+const grp=d=>(d==="deee"||d==="dangereux")?"recyclerie":d;
+const POOL=OBJ.filter(o=>GB.includes(grp(o.d)));
+let G=null;
+const gameEl=$("#game");
+function gameIntro(){
+  gameEl.innerHTML=`<div class="intro">
+    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${GB.map(k=>`<div style="width:56px">${destVisual(k,"sm")}</div>`).join("")}</div>
+    <h3>Prêt pour le défi ?</h3>
+    <p>Dix objets tirés au hasard. Bonne réponse : +10 points, et +2 par réponse d'affilée. Les appareils électriques et produits dangereux vont à la déchèterie.</p>
+    ${S.best?`<p><b>Ton record : ${S.best} points</b></p>`:""}
+    <button class="btn" id="go">🎯 Lancer le défi</button></div>`;
+  $("#go").addEventListener("click",startGame);
+}
+function startGame(){
+  tone("tap");
+  const deck=[...POOL].sort(()=>Math.random()-.5).slice(0,10);
+  G={deck,i:0,score:0,streak:0,good:0,lock:false};
+  gameEl.innerHTML=`<div class="g-top"><span id="gCount">1 / 10</span><div class="bar"><i id="gBar" style="width:0%"></i></div>
+     <div class="g-stats"><span>⭐ <span id="gScore">0</span></span><span>🔥 <span id="gStreak">0</span></span></div></div>
+   <div class="stage" id="stage"></div>
+   <div class="feedback" id="fb" aria-live="polite"></div>
+   <div class="bins" id="bins">${GB.map(k=>`<button class="gbin" data-bin="${k}"><div class="v">${destVisual(k)}</div>${DEST[k].name}</button>`).join("")}</div>`;
+  $("#bins").addEventListener("click",e=>{ const b=e.target.closest("[data-bin]"); if(b) answer(b.dataset.bin); });
+  round();
+}
+function round(){
+  const o=G.deck[G.i]; G.lock=false;
+  $("#gCount").textContent=`${G.i+1} / 10`; $("#gBar").style.width=`${G.i*10}%`;
+  $("#stage").innerHTML=`${orb(o.e,CATS[o.c].color,"item")}<div class="i-name">${esc(o.n)}</div><div class="hint">Glisse-le dans la bonne poubelle 👇</div>`;
+  $("#fb").className="feedback"; $("#fb").innerHTML="";
+  document.querySelectorAll(".gbin").forEach(b=>b.classList.remove("right","wrong","open","hover"));
+  dragify($("#stage .item"));
+}
+function dragify(el){
+  let sx=0,sy=0,on=false;
+  el.addEventListener("pointerdown",e=>{ if(G.lock) return; on=true; sx=e.clientX; sy=e.clientY; el.setPointerCapture(e.pointerId); el.classList.add("dragging"); });
+  el.addEventListener("pointermove",e=>{
+    if(!on) return;
+    el.style.transform=`translate(${e.clientX-sx}px,${e.clientY-sy}px) scale(.8) rotate(${(e.clientX-sx)/12}deg)`;
+    el.style.pointerEvents="none"; const t=document.elementFromPoint(e.clientX,e.clientY); el.style.pointerEvents="";
+    document.querySelectorAll(".gbin").forEach(b=>{ const h=t&&t.closest(".gbin")===b; b.classList.toggle("hover",h); b.classList.toggle("open",h); });
+  });
+  const end=e=>{
+    if(!on) return; on=false; el.classList.remove("dragging");
+    el.style.pointerEvents="none"; const t=document.elementFromPoint(e.clientX,e.clientY); el.style.pointerEvents="";
+    const b=t&&t.closest("[data-bin]");
+    document.querySelectorAll(".gbin").forEach(x=>x.classList.remove("hover","open"));
+    if(b && Math.hypot(e.clientX-sx,e.clientY-sy)>20){ el.style.opacity="0"; answer(b.dataset.bin); }
+    else el.style.transform="";
+  };
+  el.addEventListener("pointerup",end); el.addEventListener("pointercancel",end);
+}
+function answer(k){
+  if(!G||G.lock) return; G.lock=true;
+  const o=G.deck[G.i], right=grp(o.d), ok=k===right, d=DEST[o.d];
+  const btn=document.querySelector(`.gbin[data-bin="${k}"]`), rb=document.querySelector(`.gbin[data-bin="${right}"]`);
+  const item=$("#stage .item"); if(item) item.style.opacity="0";
+  const fb=$("#fb");
+  if(ok){
+    G.streak++; G.good++; const gain=10+(G.streak-1)*2; G.score+=gain;
+    btn.classList.add("right","open"); tone("ok");
+    const r=btn.getBoundingClientRect(); confetti(r.left+r.width/2,r.top+20);
+    fb.className="feedback ok"; fb.innerHTML=`<div class="msg"><b>Bravo ! +${gain}</b><br>${d.becomes.split(". ")[0]}.</div>`;
+    setTimeout(()=>btn.classList.remove("open"),700);
+    setTimeout(next,1700);
+  }else{
+    G.streak=0; btn.classList.add("wrong"); rb.classList.add("right","open"); tone("ko");
+    fb.className="feedback ko"; fb.innerHTML=`<div class="msg"><b>Raté ! Direction : ${DEST[right].name}</b><br>${esc(o.t||d.tip)}</div><button class="btn" id="nx">Suivant →</button>`;
+    $("#nx").addEventListener("click",next); $("#nx").focus();
+  }
+  $("#gScore").textContent=G.score; $("#gStreak").textContent=G.streak;
+}
+function next(){
+  if(!G) return; G.i++;
+  if(G.i<G.deck.length) return round();
+  $("#gBar").style.width="100%";
+  const stars=G.good>=9?3:G.good>=6?2:G.good>=3?1:0, rec=G.score>S.best;
+  if(rec) S.best=G.score; addPts(G.score);
+  const msg=["Continue, chaque geste compte !","Pas mal ! Encore un essai ?","Très bien trié !","Champion du tri !"][stars];
+  gameEl.innerHTML=`<div class="intro"><div class="stars" aria-label="${stars} étoiles sur 3">${[0,1,2].map(i=>`<span>${i<stars?"⭐":"☆"}</span>`).join("")}</div>
+    <h3>${msg}</h3><p>${G.good} bonnes réponses sur 10, <b>${G.score} points</b> ajoutés à tes éco-points.${rec?" Nouveau record !":""}</p>
+    <div class="actions" style="justify-content:center"><button class="btn" id="again">Rejouer</button><button class="btn ghost" id="explore">Explorer les objets</button></div></div>`;
+  if(stars>=2){ tone("ok"); const r=gameEl.getBoundingClientRect(); confetti(r.left+r.width/2,r.top+80,50); }
+  $("#again").addEventListener("click",startGame);
+  $("#explore").addEventListener("click",()=>selectTab("tab-explore"));
+}
+
+/* ================= ONGLETS ================= */
+const TABS={"tab-explore":"p-explore","tab-game":"p-game","tab-guide":"p-guide"};
+function selectTab(id){
+  Object.entries(TABS).forEach(([t,p])=>{ const on=t===id; $("#"+t).setAttribute("aria-selected",on); $("#"+p).hidden=!on; });
+  if(id==="tab-game" && !G) gameIntro();
+}
+document.querySelector(".tabs").addEventListener("click",e=>{ const b=e.target.closest("[role=tab]"); if(b){ tone("tap"); selectTab(b.id); } });
+
+/* ================= DÉMARRAGE ================= */
+paintSound(); renderPts(); renderCats(); renderGrid(); tiltify(document.querySelector(".hero"));
+})();
+</script>
+
+</body>
+</html>
