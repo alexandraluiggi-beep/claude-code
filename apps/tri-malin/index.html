@@ -225,6 +225,26 @@ section.panel{padding-block:6px 48px}
 .confetti{position:fixed;z-index:80;width:10px;height:14px;border-radius:3px;pointer-events:none;animation:conf 1s cubic-bezier(.2,.6,.4,1) forwards}
 @keyframes conf{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
 
+/* ---------- près de chez moi ---------- */
+.near-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+.near-search{flex:1 1 280px;width:auto}
+.near-search input{padding:13px 16px 13px 50px;font-size:1rem;border-radius:16px;box-shadow:none}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.zone-block{margin-bottom:22px}
+.zone-block h3{font-size:1.3rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.zone-block h3 small{font-family:var(--font-body);font-size:.85rem;color:var(--muted);font-weight:600}
+.places{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.place{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 14px}
+.place .orb{width:52px;height:52px;font-size:26px}
+.place h4{margin:0;font-family:var(--font-display);font-size:1.08rem;line-height:1.15}
+.place .meta{color:var(--muted);font-size:.83rem;font-weight:600}
+.badge{display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:color-mix(in oklab,var(--sun) 30%,var(--surface));color:var(--ink);margin-left:4px;vertical-align:2px}
+.links{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.links a{font-size:.85rem;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--surface-2)}
+.links a:hover{border-color:var(--accent)}
+.note{color:var(--muted);font-size:.9rem}
+.note a{color:var(--accent);font-weight:700}
+.empty{padding:24px;text-align:center;color:var(--muted);background:var(--surface);border-radius:20px;border:1px dashed var(--line)}
 .pts{white-space:nowrap}
 @media (max-width:480px){
   .brand{font-size:1.2rem}.brand .orb{width:34px;height:34px;font-size:19px}
@@ -274,6 +294,7 @@ footer a{color:var(--accent);font-weight:600}
     <button role="tab" id="tab-explore" aria-selected="true" aria-controls="p-explore">🧭 Explorer</button>
     <button role="tab" id="tab-game" aria-selected="false" aria-controls="p-game">🎯 Défi tri</button>
     <button role="tab" id="tab-guide" aria-selected="false" aria-controls="p-guide">🗺️ Où ça va ?</button>
+    <button role="tab" id="tab-near" aria-selected="false" aria-controls="p-near">📍 Près de chez moi</button>
   </div>
 
   <section class="panel" id="p-explore" role="tabpanel" aria-labelledby="tab-explore">
@@ -296,6 +317,23 @@ footer a{color:var(--accent);font-weight:600}
       <div><h2>Où ça va, et que devient-il ?</h2><p>Chaque filière transforme tes déchets en nouvelle matière. Voici ce qui se passe après le bac.</p></div>
     </div>
     <div class="dest-grid" id="destGrid"></div>
+  </section>
+
+  <section class="panel" id="p-near" role="tabpanel" aria-labelledby="tab-near" hidden>
+    <div class="panel-head">
+      <div><h2>Près de chez moi, en Corse</h2><p>Les recycleries du Syvadec (déchèteries) et les ressourceries où donner tes objets. Les horaires changent selon la saison : vérifie toujours la page officielle avant de te déplacer.</p></div>
+    </div>
+    <div class="near-tools">
+      <div class="search near-search"><span class="glass">📍</span><input id="nearQ" type="search" autocomplete="off" placeholder="Ta commune ou un site, ex. Corte, Calvi…" aria-label="Filtrer par commune"></div>
+      <div class="seg" role="group" aria-label="Type de lieu">
+        <button class="chip" data-kind="all" aria-pressed="true">Tous</button>
+        <button class="chip" data-kind="recy" aria-pressed="false">🚛 Recycleries</button>
+        <button class="chip" data-kind="asso" aria-pressed="false">🎁 Ressourceries</button>
+      </div>
+    </div>
+    <div class="cats" id="zones"></div>
+    <div id="places"></div>
+    <p class="note">Liste non exhaustive. Le Syvadec compte environ 25 recycleries fixes et des recycleries mobiles qui passent certains jours. <a href="https://www.syvadec.fr/Horaires-et-localisation-des-recycleries-du-SYVADEC_a1033.html" target="_blank" rel="noopener">Voir la carte officielle et les horaires ↗</a></p>
   </section>
 </main>
 
@@ -365,6 +403,58 @@ const CATS = {
   textile:{name:"Textile",emoji:"🧶",color:"#F7A1C4"},
   jardin:{name:"Jardin & bricolage",emoji:"🌳",color:"#B5E48C"}
 };
+/* Sites corses : noms et pages tirés du site du Syvadec (liste non exhaustive). Pas d'adresse ni d'horaire recopiés : on renvoie vers la page officielle. */
+const SYV="https://www.syvadec.fr/";
+const SYV_LIST=SYV+"Horaires-et-localisation-des-recycleries-du-SYVADEC_a1033.html";
+const ZONES={
+  ajaccio:{name:"Grand Ajaccio & Ouest",emoji:"🌅"},
+  sud:{name:"Extrême-Sud & Valinco",emoji:"🏝️"},
+  bastia:{name:"Bastia & Cap Corse",emoji:"⚓"},
+  balagne:{name:"Balagne & Nebbio",emoji:"⛰️"},
+  centre:{name:"Centre Corse",emoji:"🏔️"},
+  est:{name:"Côte orientale & Castagniccia",emoji:"🌊"}
+};
+// [commune, zone, mobile?, slug de la page Syvadec ou ""]
+const RECY=[
+  ["Cauro","ajaccio",0,"recyclerie-de-cauro"],
+  ["Pietrosella","ajaccio",1,""],
+  ["Sarrola-Carcopino (gare de Mezzana)","ajaccio",1,"recyclerie-mobile-de-sarrola-carcopino-gare-de-mezzana"],
+  ["Vico","ajaccio",0,""],
+  ["Viggianello","sud",0,"recyclerie-de-viggianello"],
+  ["Figari","sud",0,""],
+  ["Bonifacio","sud",0,""],
+  ["Porto-Vecchio","sud",0,"recyclerie-de-porto-vecchio"],
+  ["Sainte-Lucie de Porto-Vecchio","sud",0,"recyclerie-de-sainte-lucie-de-porto-vecchio"],
+  ["Lucciana","bastia",0,""],
+  ["Sisco","bastia",0,"recyclerie-de-sisco"],
+  ["Ersa","bastia",0,"recyclerie-dersa"],
+  ["Luri","bastia",1,""],
+  ["Saint-Florent","balagne",0,"recyclerie-de-saint-florent"],
+  ["Calvi (Notre-Dame de la Serra)","balagne",0,"recyclerie-de-notre-dame-de-la-serra-calvi"],
+  ["Calenzana","balagne",0,""],
+  ["Corbara","balagne",0,""],
+  ["Lama","balagne",0,"recyclerie-de-lama"],
+  ["Corte","centre",0,"recyclerie-de-corte"],
+  ["Ponte Leccia","centre",0,""],
+  ["San Lorenzo","centre",0,""],
+  ["Campile","est",0,""],
+  ["Cervione","est",0,"recyclerie-de-cervione"],
+  ["Aléria","est",0,""],
+  ["Ventiseri","est",0,"recyclerie-de-ventiseri"]
+].map(([n,z,m,s])=>({n,z,m:!!m,url:s?SYV+"recyclerie/"+s+"/":SYV_LIST,kind:"recy"}));
+// Ressourceries et associations de réemploi citées par le Syvadec et la CRESS Corse
+const ASSO=[
+  ["Dino","Porto-Vecchio","sud","Association de réemploi"],
+  ["OPRA","Bastia","bastia","Association de réemploi"],
+  ["ISATIS","Bastia","bastia","Association de réemploi"],
+  ["Eco-Creazione","Agglomération de Bastia","bastia","Ressourcerie créative et solidaire"],
+  ["Attelu d'Eco Créazione","Calvi, boutique à Corbara","balagne","Ressourcerie et boutique solidaire"],
+  ["Corse Mobilité Solidaire","Calvi","balagne","Ressourcerie"],
+  ["Secours catholique","Ajaccio et Corte","ajaccio","Dons d'objets et de vêtements"],
+  ["Secours populaire","Ajaccio et Corte","ajaccio","Dons d'objets et de vêtements"]
+].map(([n,c,z,t])=>({n,c,z,t,url:SYV+"jagis-ecoresponsable/donner-trouver/ou-et-comment-vendre-mes-objets-inutiles-en-corse/",kind:"asso"}));
+const maps=s=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(s+", Corse");
+
 // r : "donner" | "reparer" | "both" | "" ; t : astuce propre à l'objet
 const OBJ = [
  ["Bouteille d'eau en plastique","🧴","cuisine","jaune","","Le bouchon peut rester vissé dessus.","eau soda bouteille plastique"],
@@ -428,7 +518,40 @@ const OBJ = [
  ["Pot de peinture","🎨","jardin","dangereux","","Même presque vide.","peinture vernis solvant"],
  ["Huile de vidange","🛢️","jardin","dangereux","","","huile moteur vidange"],
  ["Pneu","🛞","jardin","retour","","","pneu roue"],
- ["Bouteille de gaz","🔥","jardin","retour","","Ne jamais la mettre dans une benne.","gaz butane propane"]
+ ["Bouteille de gaz","🔥","jardin","retour","","Ne jamais la mettre dans une benne.","gaz butane propane"],
+ ["Boîte à œufs en carton","🥚","cuisine","jaune","","Petite astuce : elle fait aussi un super semis.","oeuf boîte carton"],
+ ["Bouteille d'huile vide","🫒","cuisine","jaune","","Bien égouttée, elle va au bac jaune.","huile olive bouteille vide"],
+ ["Gobelet en carton","🥤","cuisine","jaune","","Mieux : une gourde ou une tasse réutilisable.","gobelet carton café"],
+ ["Rouleau de papier toilette","🧻","sdb","jaune","","Le tube en carton va au bac jaune.","rouleau carton papier toilette sopalin"],
+ ["Tube de dentifrice","🪥","sdb","jaune","","Tous les tubes vont au bac jaune, même pas tout à fait vides.","dentifrice tube crème"],
+ ["Enveloppe et courrier","✉️","maison","jaune","","Même avec fenêtre plastique.","enveloppe lettre courrier facture"],
+ ["Cahier","📓","maison","jaune","donner","Les cahiers à moitié vides font de super carnets de brouillon.","cahier carnet bloc"],
+ ["Sachet de thé","🍵","cuisine","compost","","Retire l'agrafe si le sachet en a une.","thé infusion tisane sachet"],
+ ["Essuie-tout","🧻","cuisine","compost","","Seulement s'il n'a pas touché de produit ménager.","essuie tout serviette papier mouchoir"],
+ ["Fleurs fanées","💐","maison","compost","","Sans le ruban ni l'emballage plastique.","fleur bouquet plante"],
+ ["Os et arêtes","🦴","cuisine","gris","","Ils se décomposent trop lentement pour le composteur du jardin.","os arête viande poisson"],
+ ["Coquillages","🦪","cuisine","gris","","Huîtres, moules, oursins : bac gris.","coquillage huître moule oursin"],
+ ["Aiguilles et seringues","💉","sdb","pharmacie","","Dans une boîte à aiguilles fournie gratuitement en pharmacie.","seringue aiguille stylo insuline dasri"],
+ ["Thermomètre au mercure","🌡️","sdb","dangereux","","Le mercure est très toxique : jamais à la poubelle.","thermomètre mercure"],
+ ["Produits ménagers","🧪","maison","dangereux","","Pleins ou à moitié pleins : déchèterie. Bien vides et sans pictogramme danger : bac jaune.","javel produit ménager détergent bidon"],
+ ["Cartouche de gaz camping","⛺","jardin","dangereux","","Même vide, elle peut exploser au tassement.","cartouche gaz camping"],
+ ["Batterie de voiture","🚗","jardin","dangereux","","Le garage la reprend aussi.","batterie voiture moto"],
+ ["Extincteur","🧯","maison","retour","","Le vendeur ou un installateur le reprend.","extincteur"],
+ ["Néon et tube fluorescent","💡","electro","collecte","","À manipuler sans casser : il contient du mercure.","néon tube fluorescent"],
+ ["Câbles et chargeurs","🔌","electro","deee","donner","Un chargeur qui marche peut servir à quelqu'un.","câble chargeur fil rallonge"],
+ ["Écouteurs","🎧","electro","deee","reparer","","écouteurs casque audio"],
+ ["Console de jeux","🎮","electro","deee","both","Les manettes se réparent souvent facilement.","console jeu vidéo manette"],
+ ["Cigarette électronique","💨","electro","deee","","Batterie au lithium : jamais au bac gris, risque d'incendie.","cigarette électronique vapoteuse puff"],
+ ["Lampe de chevet","🪔","electro","deee","both","Souvent, seule l'ampoule ou l'interrupteur est à changer.","lampe chevet luminaire"],
+ ["Radiateur électrique","♨️","electro","deee","reparer","","radiateur chauffage"],
+ ["Draps et serviettes","🛏️","textile","textile","donner","Les refuges pour animaux en ont souvent besoin.","drap serviette linge couette"],
+ ["Sac à main","👜","textile","textile","both","","sac main pochette"],
+ ["Cintre","🧥","maison","recyclerie","donner","Les pressings et ressourceries les récupèrent.","cintre"],
+ ["Poussette","👶","maison","recyclerie","both","","poussette landau"],
+ ["Barbecue","🍖","jardin","recyclerie","both","Grille et cuve partent à la ferraille.","barbecue plancha"],
+ ["Sapin de Noël","🎄","jardin","recyclerie","","Sans décorations ni neige artificielle : il sera broyé en paillage.","sapin noël arbre"],
+ ["Vitre cassée","🪟","maison","recyclerie","","Pas dans la colonne à verre.","vitre fenêtre carreau"],
+ ["Bâche plastique","🏕️","jardin","recyclerie","","Les grands plastiques ont leur benne.","bâche plastique serre"]
 ].map((a,i)=>({id:i,n:a[0],e:a[1],c:a[2],d:a[3],r:a[4]||"",t:a[5]||"",k:a[6]||""}));
 // correction : pour la boîte à pizza, l'astuce est en 5e position
 OBJ.forEach(o=>{ if(!["","donner","reparer","both"].includes(o.r)){ o.k=o.t; o.t=o.r; o.r=""; } });
@@ -632,7 +755,7 @@ function showAct(o,m){
     ${o.t?`<div class="box"><b>💡 Astuce</b>${esc(o.t)}</div>`:""}
     <div class="box"><b>🌍 Le savais-tu ?</b>${a.tip}</div>
     ${award(o,8)}
-    <div class="actions"><button class="btn" id="toSort">Et s'il est vraiment fichu ?</button><button class="btn ghost" id="back">← Changer de réponse</button></div>
+    <div class="actions">${m==="donner"?'<button class="btn ghost" data-near="asso">📍 Ressourceries en Corse</button>':""}<button class="btn" id="toSort">Et s'il est vraiment fichu ?</button><button class="btn ghost" id="back">← Changer de réponse</button></div>
   </div>`;
   tiltify($("#flow"));
   $("#toSort").addEventListener("click",()=>showSort(o,true));
@@ -649,7 +772,7 @@ function showSort(o,fromAsk){
     ${o.t?`<div class="box"><b>💡 Astuce</b>${esc(o.t)}</div>`:""}
     <div class="box"><b>✅ Le bon geste</b>${d.tip}</div>
     ${award(o,5)}
-    <div class="actions">${fromAsk?'<button class="btn ghost" id="back">← Changer de réponse</button>':""}<button class="btn" id="next">Un autre objet</button></div>
+    <div class="actions">${["recyclerie","deee","dangereux"].includes(o.d)?'<button class="btn ghost" data-near="recy">📍 Trouver ma recyclerie</button>':""}${fromAsk?'<button class="btn ghost" id="back">← Changer de réponse</button>':""}<button class="btn" id="next">Un autre objet</button></div>
   </div>`;
   const sc=$("#scene");
   requestAnimationFrame(()=>{
@@ -761,8 +884,45 @@ function next(){
   $("#explore").addEventListener("click",()=>selectTab("tab-explore"));
 }
 
+/* ================= PRÈS DE CHEZ MOI ================= */
+let nearKind="all",nearZone="all";
+function renderZones(){
+  const all=[["all","Toute la Corse","🗺️"]].concat(Object.entries(ZONES).map(([k,z])=>[k,z.name,z.emoji]));
+  $("#zones").innerHTML=all.map(([k,n,e])=>`<button class="chip" data-zone="${k}" aria-pressed="${k===nearZone}"><span>${e}</span>${n}</button>`).join("");
+}
+function placeCard(p){
+  if(p.kind==="recy") return `<article class="place">${orb(p.m?"🚚":"🚛",p.m?"#FFC97A":"#7FB2E5")}
+    <div><h4>Recyclerie ${p.m?"mobile ":""}de ${esc(p.n)}${p.m?'<span class="badge">certains jours</span>':""}</h4><div class="meta">Déchèterie Syvadec · encombrants, DEEE, déchets dangereux</div></div>
+    <div class="links"><a href="${p.url}" target="_blank" rel="noopener">Horaires officiels ↗</a><a href="${maps("Recyclerie Syvadec "+p.n.replace(/\s*\(.*\)/,""))}" target="_blank" rel="noopener">🧭 Itinéraire</a></div></article>`;
+  return `<article class="place">${orb("🎁","#F7A1C4")}
+    <div><h4>${esc(p.n)}</h4><div class="meta">${esc(p.c)} · ${esc(p.t)}</div></div>
+    <div class="links"><a href="${p.url}" target="_blank" rel="noopener">Contacts sur syvadec.fr ↗</a><a href="${maps(p.n+" "+p.c.split(",")[0])}" target="_blank" rel="noopener">🧭 Itinéraire</a></div></article>`;
+}
+function renderPlaces(){
+  const s=norm($("#nearQ").value.trim());
+  const list=[...RECY,...ASSO].filter(p=>(nearKind==="all"||p.kind===nearKind)&&(nearZone==="all"||p.z===nearZone)
+    &&(!s||norm(p.n+" "+(p.c||"")+" "+ZONES[p.z].name).includes(s)));
+  if(!list.length){ $("#places").innerHTML=`<div class="empty">Aucun site trouvé pour cette recherche. Essaie une commune voisine, ou consulte la <a href="${SYV_LIST}" target="_blank" rel="noopener">carte officielle</a>.</div>`; return; }
+  $("#places").innerHTML=Object.entries(ZONES).map(([k,z])=>{
+    const ps=list.filter(p=>p.z===k); if(!ps.length) return "";
+    return `<div class="zone-block"><h3>${z.emoji} ${z.name} <small>${ps.length} lieu${ps.length>1?"x":""}</small></h3><div class="places">${ps.map(placeCard).join("")}</div></div>`;
+  }).join("");
+  tiltify($("#places"));
+}
+$("#zones").addEventListener("click",e=>{ const b=e.target.closest("[data-zone]"); if(!b) return; nearZone=b.dataset.zone; renderZones(); renderPlaces(); });
+document.querySelector(".seg").addEventListener("click",e=>{ const b=e.target.closest("[data-kind]"); if(!b) return; nearKind=b.dataset.kind;
+  document.querySelectorAll(".seg [data-kind]").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderPlaces(); });
+$("#nearQ").addEventListener("input",renderPlaces);
+function goNear(kind){
+  closeSheet(); nearKind=kind; nearZone="all";
+  document.querySelectorAll(".seg [data-kind]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.kind===kind));
+  renderZones(); renderPlaces(); selectTab("tab-near");
+  document.querySelector(".tabs").scrollIntoView({behavior:"smooth",block:"start"});
+}
+card.addEventListener("click",e=>{ const b=e.target.closest("[data-near]"); if(b) goNear(b.dataset.near); });
+
 /* ================= ONGLETS ================= */
-const TABS={"tab-explore":"p-explore","tab-game":"p-game","tab-guide":"p-guide"};
+const TABS={"tab-explore":"p-explore","tab-game":"p-game","tab-guide":"p-guide","tab-near":"p-near"};
 function selectTab(id){
   Object.entries(TABS).forEach(([t,p])=>{ const on=t===id; $("#"+t).setAttribute("aria-selected",on); $("#"+p).hidden=!on; });
   if(id==="tab-game" && !G) gameIntro();
@@ -770,7 +930,7 @@ function selectTab(id){
 document.querySelector(".tabs").addEventListener("click",e=>{ const b=e.target.closest("[role=tab]"); if(b){ tone("tap"); selectTab(b.id); } });
 
 /* ================= DÉMARRAGE ================= */
-paintSound(); renderPts(); renderCats(); renderGrid(); tiltify(document.querySelector(".hero"));
+paintSound(); renderPts(); renderCats(); renderGrid(); renderZones(); renderPlaces(); tiltify(document.querySelector(".hero"));
 })();
 </script>
 
