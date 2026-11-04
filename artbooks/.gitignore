@@ -1,0 +1,6 @@
+# Données privées : ne jamais versionner
+bibliotheque.db
+covers/
+*.pdf
+__pycache__/
+.venv/
